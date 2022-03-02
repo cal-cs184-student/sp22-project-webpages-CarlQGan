@@ -1,7 +1,213 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 184 Mesh Editor</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+  <h1 align="middle">Project 2: Mesh Editor</h1>
+  <h2 align="middle">Bronya Yang and Carl Gan, CS184-lantern</h2>
+
+  <br><br>
+
+  <div>
+
+    <h2 align="middle">Overview</h2>
+    <p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole.
+      Share your thoughts on what interesting things you've learned from completing the project.</p>
+
+    <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+    <h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+    <p>de Casteljau's algorithm is an algorithm to smooth curves with n+1 control points. Basically, the algorithm
+    reduce the n+1 control points by linear interpolate each pair of points recursively until only one point left.
+    The only point is on the curve. By adjusting the parameter t, the only point traces a smooth curve.</p>
+
+    <p>In order to evaluate the Bezier curves, I fillout the evaluateStep function. In the function, we loop through
+    all the control points and calculate intermediate points or the final interpolated vector, using the formula
+    pi' = lerp(pi, pi+1, t) = (1-t)pi + tpi+1 .</p>
+
+    <p>The below figures show our own Bezier curve with 6 control points.</p>
+
+    <img src="images/task1_1.png" align="middle" width="400px" />
+    <figcaption align="middle">Step 1 of the evaluation.</figcaption>
+
+    <img src="images/task1_2.png" align="middle" width="400px" />
+    <figcaption align="middle">Step 2 of the evaluation.</figcaption>
+
+    <img src="images/task1_3.png" align="middle" width="400px" />
+    <figcaption align="middle">Step 3 of the evaluation.</figcaption>
+
+    <img src="images/task1_4.png" align="middle" width="400px" />
+    <figcaption align="middle">Step 4 of the evaluation.</figcaption>
+
+    <img src="images/task1_5.png" align="middle" width="400px" />
+    <figcaption align="middle">Final evaluation.</figcaption>
+
+    <img src="images/task1_6.png" align="middle" width="400px" />
+    <figcaption align="middle">Final evaluation with curve.</figcaption>
+
+    <img src="images/task1_7.png" align="middle" width="400px" />
+    <figcaption align="middle">A slightly different Bezier curve by moving the original control points around and modifying the parameter t.</figcaption>
+
+
+    <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+
+    <p>de Casteljau's algorithm extends to Bezier surfaces in a way that, de Casteljau's algorithm is ran on each row of control points.
+    Each row of control points are reduced to a single point on the Bezier curve. The point is parameterized by u. For each point represented by each row,
+    the set of points are passed into the de Casteljau's algorithm to reduce to the final single point, parameterized by v.</p>
+
+    <p>In order to evaluate Bezier surfaces at point (u, v), we take the grid of control points. For each row of control points, we put them into the
+    function evaluate1D to get the set of points on each row Bezier curve evaluated at u. evaluate1D function is recursively calling evaluateStep function until one point left.
+      Then, we take the set of points and pass them again into the function evaluate1D evaluated at v.</p>
+
+    <img src="images/task2.png" align="middle" width="400px" />
+    <figcaption align="middle">A screenshot of bez/teapot.bez.</figcaption>
+
+    <h2 align="middle">Section II: Sampling</h2>
+
+    <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+
+    <p>To implement area-weighted vertex normals, we first take out the half edge corresponding to the current vertex. Then, we loop through all the
+    neighboring vertices. Each pair of neighboring vertices with the current middle vertex form a triangle. The current vertex is connected with a fan of
+    triangles. Area-weighted vertex normal is just sum of area of triangles times the normal of triangles. We compute the area of triangles by cross product
+    edge vectors of a triangle (neighboring vertex1 - current vertex and neighboring vertex2 - current vertex). The norm of the resulting vector is area of
+      parallelogram, so we divide by 2 to get the triangle area. To get the normal of the triangle, we normalize the resulting vector. In the end, we sum
+    all triangle normals* their corresponding area, then normalize.</p>
+
+    <img src="images/task3_2.png" align="middle" width="400px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae shading without vertex normals.</figcaption>
+
+    <img src="images/task3.png" align="middle" width="400px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae shading with vertex normals.</figcaption>
+
+
+    <h3 align="middle">Part 4: Half-edge flip</h3>
+
+    <p>To implement edge flip, we need to take the neighboring triangles and their elements into consideration.</p>
+
+    <p>Before making any changes, we traverse every half-edges, vertices, edges, and faces in the neighboring triangles, and store them respectively. It's better to draw a graph on a piece of draft paper and label each element correspondingly, so that when we are changing any pointers when flipping, we can visually inspect the new relations among elements, and it's easier to debug with a labeled graph.</p>
+
+    <p>Since flipping an edge does not create or delete any existing element, what we need to do next is to carefully reassign every pointer for each element, no matter it's been changed or not. We can proceed by first drawing out the graph after flipping the edge along with labels, then set each pointer correctly according to the new graph. The over process is a little bit mechanical, but taking the shortcut by using <code>Halfedge::setNeighbors(...)</code> saves a lot of time.</p>
+
+    <p>Overall, we performed a constant amount of work: we traversed 10 half-edges, 4 vertices, 5 edges, and 2 faces, and looped through them again for setting up their pointers correctly.</p>
+
+    <p>Here are some images on <code>teapot.dae</code> for edge flip operations:</p>
+
+    <img src="images/task4_1.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, original</figcaption>
+
+    <img src="images/task4_2.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, flipped some diagonal edges</figcaption>
+
+    <img src="images/task4_3.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, flipped some horizontal edges</figcaption>
+
+    <img src="images/task4_4.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, flipped more edges in random order</figcaption>
+
+
+
+    <h3 align="middle">Part 5: Half-edge split</h3>
+
+    <p>To implement edge split, just like edge flip, we need to take the neighboring triangles and their elements into consideration. The difference is that now we creates new elements in the mesh, while the main structure remains alike.</p>
+
+     <p>Before making any changes, we traverse every half-edges, vertices, edges, and faces in the neighboring triangles, and store them respectively. It's better to draw a graph on a piece of draft paper and label each element correspondingly, so that when we are changing any pointers when splitting, we can visually inspect the new relations among elements, and it's easier to debug with a labeled graph.</p>
+
+     <p>Then comes the part that is different to flip: we create 6 new half-edges, 1 new vertex, 3 new edges, and 2 new faces. The numbers here do not look intuitively correct at first, and that is due to the fact that we are reusing existing elements and reassigning them. Therefore, we come down to the numbers above.</p>
+
+     <p>The last step is to carefully reassign every pointer for each element, no matter it's been changed or not. We can proceed by first drawing out the graph after splitting the edge along with labels, then set each pointer correctly according to the new graph. Beware that we need to assign a position to the new vertex, which will be the average of the positions of the two vertices of the original edge. The over process is a little bit mechanical, but taking the shortcut by using <code>Halfedge::setNeighbors(...)</code> saves a lot of time.</p>
+
+     <p>Overall, we performed a constant amount of work: we traversed 10 half-edges, 4 vertices, 5 edges, and 2 faces, created 6 new half-edges, 1 new vertex, 3 new edges, and 2 new faces. Then, we looped through all of them to set up their pointers correctly.</p>
+
+    <img src="images/task5_1.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, original</figcaption>
+
+    <img src="images/task5_2.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, splitted some diagonal edges and some vertical edges</figcaption>
+
+    <img src="images/task5_3.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/teapot.dae, flip-then-split as well as split-then-flip</figcaption>
+
+
+    <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+
+    <p>To implement loop subdivision, we performed the following 5 steps:</p>
+
+    <p>First, we compute the new position for each old vertex by iterating over all of them. We implemented a helper method <code>Vector::computeCentroid()</code> that stores the average position of neighboring vertices into its <code>Vector3D Vertex::centroid</code>, which is handy for computing the new position for existing vertices. We store the new position in <code>Vector3D Vertex::newPosition</code> before actually updating, since we still need the original position for computation. At the same time, we update the <code>bool Vertex::isNew</code> flag to indicate that this vertex is an existing one.</p>
+
+    <p>Then, we compute the positions for new vertices by traversing existing edges and storing the new position for the vertex that will be created due to splitting on that edge in <code>Vector3D Edge::newPosition</code>, so that we can refer to it later when creating the vertex.</p>
+
+    <p>Afterwards, we loop through all existing edges and split them. Since every new edge is automatically appended to the edge list of the mesh, we will fall into an infinite loop if we simply loop through the edges. Due to the fact that every new edge is appended to the end of the list, we can make use of this feature by recording the number of edges in the original mesh, and iterate that many times in the list. This will guarantee that we only split existing edges in the mesh, not newly created ones. We also retrieve the new position of the newly created vertex from the edge and store it into <code>Vector3D Edge::newPosition</code> of the new vertex, and set the flag to indicate that the vertex is newly created. We also need to update some edges to indicate that they are newly created according to how we implemented edge split.</p>
+
+    <p>Once we have splitted all the edges, we need to flip the ones that are new and connects an old and a new vertex. Since flipping edges does not create new edges, it is safe to simply iterate through the edges list now. We use an XOR operator to check if the above connectivity condition is satisfied, and flip the edge accordingly.</p>
+    
+    <p>Finally, we can iterate through all the vertices and update the positions after upsampling!</p>
+
+    <p>We can clearly see that meshes become smoother and more continuous after several loop subdivisions, and sharp corners and edges are rounded into a curve. We can preserve the sharp edges and corners by splitting the edge that we do not wish to round up after upsampling, and then split the new edges that are intersecting the original edge repeatedly before loop subdivision to preserve sharpness. We will demonstrate this with <code>dae/cube.dae</code>:</p>
+
+    <img src="images/task6_1.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, splitted the edges according to the above method</figcaption>
+
+    <img src="images/task6_2.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, one loop subdivision after splitting</figcaption>
+
+    <img src="images/task6_3.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, two loop subdivisions after splitting</figcaption>
+
+    <img src="images/task6_4.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, three loop subdivisions after splitting</figcaption>
+
+    <img src="images/task6_5.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, four loop subdivisions after splitting</figcaption>
+
+
+    <p>After performing several loop subdivisions on <code>dae/cube.dae</code>, we can see that the cube becomes slightly asymmetric. This is because the diagonals of the surfaces is not symmetric, and edges guide the direction of loop subdivision, which will result in asymmetric cube upsampling. To eliminate the effect, we can split all diagonals on the surface of the cube, so that the triangles are now symmetric. Pre-processing changes the edges of the model, which we can think of changing how we direct the new vertices according to the edges, since the edges are used in computing the geometric location of a new vertex.</p>
+
+    <img src="images/task6_10.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, original</figcaption>
+
+    <img src="images/task6_13.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, 3 loop subdivisions performed</figcaption>
+
+    <img src="images/task6_11.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, splitted diagonal edges</figcaption>
+
+    <img src="images/task6_12.png" align="middle" width="600px" />
+    <figcaption align="middle">A screenshot of dae/cube.dae, 3 loop subdivisions after diagonal split</figcaption>
+
+
+
+    <h2 align="middle">Section III: Optional Extra Credit</h2>
+    <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
+
+    <h3 align="middle">Part 7: Design your own mesh!</h3>
+
+</body>
+
 </html>
