@@ -212,6 +212,7 @@
                 </table>
             </div>
 
+<<<<<<< HEAD
     <h2 align="middle">Part 3: Direct Illumination</h2>
     <p>For uniform hemisphere sampling, we take num_samples samples from hemisphereSampler. Within each iteration, we simply get the sample by calling get_sample(). Then, we initialize a ray using the sample and hit_p, and we also need to make sure that they are in the same coordinate (world). If the ray has an intersection with the scene, we simply aggregate the light emitted at that intersection (will be black if it’s not a light source) scaled by the reciprocal of probability (in uniform hemisphere it’s 2 * PI), the cos_theta, and the reflectance. Then, we divide the result by num_samples to get the averaged result.</p>
 
@@ -374,27 +375,6 @@
             </div>
 
 
-    <p>CBbunny.dae with 1024 samples per pixel, only direct illumination vs only indirect illumination:</p>
-
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/bunny_1024_4_depth1.png" width="480px" />
-                    </tr>
-                </table>
-            </div>
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/bunny_1024_4_indirect.png" width="480px" />
-                    </tr>
-                </table>
-            </div>
-
 
     <p>For CBbunny.dae, we use 1024 samples per pixel and 0, 1, 2, 3, and 100 max_ray_depth. We can see that 0 returns zero bounce, the light source, 1 returns only one bounce, and 2, 3 start to render some indirect lighting in the shadow. For 100 max depth, the result has much clearer shadows. However, the effect is not significant, since most rays has been terminated by the Russian roulette policy long before reaching the maximum depth.</p>
             <div align="center">
@@ -415,20 +395,42 @@
                 </table>
             </div>
 
+=======
+            <h2 align="middle">Part 5: Adaptive Sampling</h2>
+
+        <p>For adaptive sampling, we follow the exact hint in the spec.
+            Specifically, we create variable s1 to be the sum of illuminance and s2 to be the sum of square of illuminance over current samples inside raytrace_pixel function.
+            Illuminance is calculate by calling .illum() on radiance Vector3D. If the current sample number n is a multiple of samplesPerBatch, we conduct convergence test.
+            The convergence test is:</p>
+>>>>>>> master
             <div align="center">
                 <table style="width=100%">
                     <tr>
                         <td align="middle">
+<<<<<<< HEAD
                             <img src="images/bunny_1024_4_depth2.png" width="480px" />
                     </tr>
                 </table>
             </div>
+=======
+                            <img src="images/Convergence_test.png" width="480px" />
+                            <figcaption align="middle">Convergence test.</figcaption>
+                    </tr>
+                </table>
+            </div>
+        <p>where each variable is calculated in the following way:</p>
+>>>>>>> master
 
             <div align="center">
                 <table style="width=100%">
                     <tr>
                         <td align="middle">
+<<<<<<< HEAD
                             <img src="images/bunny_1024_4_depth3.png" width="480px" />
+=======
+                            <img src="images/I.png" width="480px" />
+                            <figcaption align="middle">Calculate I.</figcaption>
+>>>>>>> master
                     </tr>
                 </table>
             </div>
@@ -437,11 +439,17 @@
                 <table style="width=100%">
                     <tr>
                         <td align="middle">
+<<<<<<< HEAD
                             <img src="images/bunny_1024_4_depth100.png" width="480px" />
+=======
+                            <img src="images/mean_var.png" width="480px" />
+                            <figcaption align="middle">Calculate mean and variance.</figcaption>
+>>>>>>> master
                     </tr>
                 </table>
             </div>
 
+<<<<<<< HEAD
 
 
 
@@ -454,12 +462,22 @@
                     </tr>
                 </table>
             </div>
+=======
+        <p>In the end, if converges before max sample number, we set sampleCountBuffer to be the actual samples used.</p>
+
+        <p>Below figure shows a good sampling rate image and its heat map:</p>
+>>>>>>> master
 
             <div align="center">
                 <table style="width=100%">
                     <tr>
                         <td align="middle">
+<<<<<<< HEAD
                             <img src="images/bunny_2_4_depth4.png" width="480px" />
+=======
+                            <img src="images/bunny.png" width="480px" />
+                            <figcaption align="middle">Bunny with adaptive sampling.</figcaption>
+>>>>>>> master
                     </tr>
                 </table>
             </div>
@@ -468,11 +486,17 @@
                 <table style="width=100%">
                     <tr>
                         <td align="middle">
+<<<<<<< HEAD
                             <img src="images/bunny_4_4_depth4.png" width="480px" />
+=======
+                            <img src="images/bunny_rate.png" width="480px" />
+                            <figcaption align="middle">Bunny rate with adaptive sampling.</figcaption>
+>>>>>>> master
                     </tr>
                 </table>
             </div>
 
+<<<<<<< HEAD
             <div align="center">
                 <table style="width=100%">
                     <tr>
@@ -514,67 +538,20 @@
 
     <h2 align="middle">Part 5: Adaptive Sampling</h2>
 
-        <p>For adaptive sampling, we follow the exact hint in the spec.
-            Specifically, we create variable s1 to be the sum of illuminance and s2 to be the sum of square of illuminance over current samples inside raytrace_pixel function.
-            Illuminance is calculate by calling .illum() on radiance Vector3D. If the current sample number n is a multiple of samplesPerBatch, we conduct convergence test.
-            The convergence test is:</p>
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/Convergence_test.png" width="480px" />
-                            <figcaption align="middle">Convergence test.</figcaption>
-                    </tr>
-                </table>
-            </div>
-        <p>where each variable is calculated in the following way:</p>
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/I.png" width="480px" />
-                            <figcaption align="middle">Calculate I.</figcaption>
-                    </tr>
-                </table>
-            </div>
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/mean_var.png" width="480px" />
-                            <figcaption align="middle">Calculate mean and variance.</figcaption>
-                    </tr>
-                </table>
-            </div>
-
-        <p>In the end, if converges before max sample number, we set sampleCountBuffer to be the actual samples used.</p>
-
-        <p>Below figure shows a good sampling rate image and its heat map:</p>
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/bunny.png" width="480px" />
-                            <figcaption align="middle">Bunny with adaptive sampling.</figcaption>
-                    </tr>
-                </table>
-            </div>
-
-            <div align="center">
-                <table style="width=100%">
-                    <tr>
-                        <td align="middle">
-                            <img src="images/bunny_rate.png" width="480px" />
-                            <figcaption align="middle">Bunny rate with adaptive sampling.</figcaption>
-                    </tr>
-                </table>
-            </div>
+    <h2 align="middle">A Few Notes On Webpages</h2>
+        <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
+        <ul>
+        <li>Your main report page should be called index.html.</li>
+        <li>Be sure to include and turn in all of the other files (such as images) that are linked in your report!</li>
+        <li>Use only <em>relative</em> paths to files, such as <pre>"./images/image.jpg"</pre>
+        Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
+        <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
+        <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
+        <li>And again, test your website on the instructional machines early!</li>
+=======
 
 
-
+>>>>>>> master
 </div>
 </body>
 </html>
