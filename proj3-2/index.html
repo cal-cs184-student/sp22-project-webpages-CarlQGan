@@ -1,7 +1,187 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Carl Gan and Bronya Yang  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3-2: PathTracer</h1>
+    <h2 align="middle">Carl Gan and Bronya Yang</h2>
+
+    <div class="padded">
+        <p></p>
+
+    <h2 align="middle">Part 2: Microfacet Material</h2>
+        <p>The below figures are a sequence of 4 images of scene CBdragon_microfacet_au.dae rendered with alpha set to 0.005, 0.05, 0.25 and 0.5.
+            The other settings are 128 samples per pixel, 1 samples per light, number of bounces is 5.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBgragon_0.5.png" width="480px" />
+                    <figcaption align="middle">Dragon with alpha 0.5.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBgragon_0.25.png" width="480px" />
+                        <figcaption align="middle">Dragon with alpha 0.25.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBgragon_0.05.png" width="480px" />
+                        <figcaption align="middle">Dragon with alpha 0.05.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBgragon_0.005.png" width="480px" />
+                        <figcaption align="middle">Dragon with alpha 0.005.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>The differences between different images are that for small alpha, the surface is smooth and glossy. For large alpha, the surface is diffuse and matt. </p>
+
+        <p>The below figures are rendered using cosine hemisphere sampling and importance sampling.
+            The sampling rate is 64 samples per pixel and 1 samples per light.
+            The number of bounces is 5.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBbunny_csample.png" width="480px" />
+                        <figcaption align="middle">Bunny with cosine hemisphere sampling.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBbunny_Isample.png" width="480px" />
+                        <figcaption align="middle">Bunny with cosine hemisphere sampling.</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <p>The main difference is that, with cosine hemisphere sampling, there are much more noise. With importance sampling,
+        there are no black dots.</p>
+        <p>One other conductor material we choose is mercury. The below figure shows the picture where eta are 1.8795 1.5472 1.1353 and k are 5.1076 4.6437 3.9980.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBbunny_Hg.png" width="480px" />
+                        <figcaption align="middle">Bunny with Hg material.</figcaption>
+                </tr>
+            </table>
+        </div>
+
+    <h2 align="middle">Part 4: Depth of Field</h2>
+        <p>In this part, we implemented a thin-lens camera using uniform sampling from a disk plane, the lens. For a pinhole camera, everything is always focused, and there is no blurriness anywhere in the image. For a thin-lens camera, only objects at the focal distance will be crystal clear, and objects not in focus will become blurry, due to the fact that rays now can travel via different paths through the lens and reach the plane. So, there will be multiple paths between each image pixel and each texture pixel, which will result in a depth of field effect.</p>
+
+        <p>The following are the renders on CBdragon_microfacet_au.dae that focus on 4 visibly different depths:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_1_d_3_3.png" width="480px" />
+                    <figcaption align="middle">Bunny with depth 3.3 and aperture size 0.1.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_1_d_3_7.png" width="480px" />
+                    <figcaption align="middle">Bunny with depth 3.7 and aperture size 0.1.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_1_d_4_1.png" width="480px" />
+                    <figcaption align="middle">Bunny with depth 4.1 and aperture size 0.1.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_1_d_4_5.png" width="480px" />
+                    <figcaption align="middle">Bunny with depth 4.5 and aperture size 0.1.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>As we can see, the bunny becomes clearer as the depth of field approaches near the same depth of the bunny, i.e., the bunny comes into focus.</p>
+
+        <p>The following are the renders on CBdragon_microfacet_au.dae that focus on 4 visibly different aperture sizes, all focused at the same point in a scene:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_1_d_4_5.png" width="480px" />
+                    <figcaption align="middle">Bunny with aperture size 0.1 and depth 4.5.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_3_d_4_5.png" width="480px" />
+                    <figcaption align="middle">Bunny with aperture size 0.3 and depth 4.5.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_5_d_4_5.png" width="480px" />
+                    <figcaption align="middle">Bunny with aperture size 0.5 and depth 4.5.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                    <img src="images/CBbunnyMF_b_0_7_d_4_5.png" width="480px" />
+                    <figcaption align="middle">Bunny with aperture size 0.7 and depth 4.5.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>As we can see, the bunny becomes blurrier as we increase the aperture size, as now the light rays can travel through a wider range and make the image less sharp.</p>
+
+</div>
+</body>
 </html>
+
+
+
+
