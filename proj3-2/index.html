@@ -21,7 +21,89 @@
     <div class="padded">
         <p></p>
 
+        <p>In this part of the project, we implemented microfacet material effects and depth of field effect. We followed the basic geometry of those parts and figured out the proper ways of implementing the these features.</p>
+
     <h2 align="middle">Part 2: Microfacet Material</h2>
+        <p>In this part, we first implement the MicrofacetBSDF function according to this formula.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f1.png" width="890px" />
+                        <figcaption align="middle">MicrofacetBSDF function.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>Then, we overwrite the NDF and Fresnel Term according to the given formula.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f2.png" width="890px" />
+                        <figcaption align="middle">NDF formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f3.png" width="890px" />
+                        <figcaption align="middle">Fresnel Term formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>In the end, we implement importance sampling. First, we sample microfacet normal h. Using below formula, we get the normal angle in polar coordinate.
+        </p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f4.png" width="890px" />
+                        <figcaption align="middle">Microfacet normal angle polar coord formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>Then, we convert the polar coordinate to cartisian coordinate using below formula.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f5.png" width="200px" />
+                        <figcaption align="middle">Conversion formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>wi is calculated by 2*dot(h, wo)*h - wo. If wi's z <= 0, then return 0 for pdf and 0 for BRDF. In the end, we calculate pdf of wi using below formula.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f6.png" width="200px" />
+                        <figcaption align="middle">pdf formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>where p_w(h) is:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f7.png" width="250px" />
+                        <figcaption align="middle">p_w(h) formula.</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>where p_theta(theta_h) and p_phi(phi_h) is:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/f8.png" width="320px" />
+                        <figcaption align="middle">p_theta and p_phi formula.</figcaption>
+                </tr>
+            </table>
+        </div>
         <p>The below figures are a sequence of 4 images of scene CBdragon_microfacet_au.dae rendered with alpha set to 0.005, 0.05, 0.25 and 0.5.
             The other settings are 128 samples per pixel, 1 samples per light, number of bounces is 5.</p>
         <div align="center">
@@ -99,6 +181,8 @@
 
     <h2 align="middle">Part 4: Depth of Field</h2>
         <p>In this part, we implemented a thin-lens camera using uniform sampling from a disk plane, the lens. For a pinhole camera, everything is always focused, and there is no blurriness anywhere in the image. For a thin-lens camera, only objects at the focal distance will be crystal clear, and objects not in focus will become blurry, due to the fact that rays now can travel via different paths through the lens and reach the plane. So, there will be multiple paths between each image pixel and each texture pixel, which will result in a depth of field effect.</p>
+
+        <p>In order to achieve this effect, we first need to compute the ray (red ray) in camera space that passes through the origin to find the corresponding pixel on the object. This one is highly similar to the approach we took in proj3-1. Then, we can start sampling from the given position on the lens. The tricky part here is to find the point in focus, which can be done in a rather convenient way: we just multiply the red ray with focalDistance to find the point in focus. Then, we can proceed to compute the ray that originates from the sample point on the lens and directs towards the point in focus. We then convert the ray into world coordinates and set up clipping parameters, and return it.</p>
 
         <p>The following are the renders on CBdragon_microfacet_au.dae that focus on 4 visibly different depths:</p>
         <div align="center">
