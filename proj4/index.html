@@ -1,7 +1,630 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Bronya(Shijia) Yang and Carl Gan, CS184-physicians</h2>
+
+<h2 align="middle"><a href="https://cal-cs184-student.github.io/sp22-project-webpages-CarlQGan/proj4/index.html">https://cal-cs184-student.github.io/sp22-project-webpages-CarlQGan/proj4/index.html</a></h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, we simulate cloth. First, we build the cloth as a system of masses and springs connecting them.
+Then, we add force and update the masses position according to the force acting on them. We also handle collision of the cloth on plane and shere as well as self-collision.
+In the end, we add different shading to the cloth. We find the last part interesting and challenging because it is visually appealing.</p>
+
+<h2 align="middle">Part I: Masses and springs</h2>
+
+    <p> For this part, we need to fill the Cloth::buildGrid() function. First, we create num_height_points * num_width_points number of masses.
+    If the orientation of the cloth is vertical, we set position to (x: (point number on width side - 1 ) * width between 2 points, y: 1, z: (point number on height side - 1 ) * height between 2 points).
+    Then, loop through pinned vector. If the current pair of index is in the vector, the pinned is true for the mass.
+    If the orientation of the cloth is horizontal, process is exactly the same as the above, but change the position to (x: (point number on width side - 1 ) * width between 2 points, y: (point number on height side - 1 ) * height between 2 points, z: random offset between -1/1000 and 1/1000).
+    Append each masses to point_masses vector.
+    In the end, we add springs according to the rule on the spec:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1.png" width="890px" />
+                    <figcaption align="middle">Spring adding rule.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>We ensure edges are correct by checking that going left, right, above, below the current mass does not exceed the bounds (0, num_height_points - 1) and (0, num_width_points - 1).</p>
+    <p>Below pictures shows the masses and springs:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1_pic1.png" width="890px" />
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1_pic2.png" width="890px" />
+                    <figcaption align="middle">Some screenshots of scene/pinned2.json from a viewing angle where we can clearly see the cloth wireframe to show the structure of your point masses and springs.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1_noshear.png" width="890px" />
+                    <figcaption align="middle">The wireframe (1) without any shearing constraints.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1_shear.png" width="890px" />
+                    <figcaption align="middle">The wireframe (2) with only shearing constraints.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task1_all.png" width="890px" />
+                    <figcaption align="middle">The wireframe (3) with all constraints.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+
+<h2 align="middle">Part II: Simulation via numerical integration</h2>
+    <p>To implement simulation via numerical integration, we need to understand the basic physics behind the simulation.</p>
+
+    <p>First, we need to compute the total force acting on each point mass. There are two types of forces we will be simulating, which will be based on acceleration and springs. We need to calculate the total external force on each PointMass based on the external_accelerations and the mass using Newton’s 2nd Law. Then, we also need to apply the spring correction forces following the Hooke’s Law. We need to check it the spring’s constraint type is enabled, and apply a bending factor of 0.2 if the spring is of bending type when calculating the force. Then, we apply the force on the two ends of the spring with the correct direction.</p>
+
+    <p>Then, we use Verlet integration to compute the new point mass positions, including a damping factor to account for other forces that are not in our simulation. We proceed to update the last_position and position for each point mass accordingly.</p>
+
+    <p>Another important part is that we need to add constraints to the springs so that they will behave more realistically in the simulation: the spring must be at most 10% more than its rest_length, or at most 10% less than its rest_length. If the current simulation violates this constraint, we need to adjust the end points of the springs to account for this using the midpoint of the spring as reference and set up the endpoints accordingly. We also need to be careful about the cases where the end points of the springs may be pinned, where we need to adjust one end point’s position according to the other pinned end point’s position.</p>
+
+    <p>Now, we have a working physics simulation.</p>
+
+    <p>The spring constant reflects the stiffness of the spring, which in turn reflects how much force is generated given the change of length from the resting length. Changing this constant will in turn change the characteristic of the springs: if the spring constant is low, the cloth behaves very soft, bounces more, there could be multiple wrinkles on the cloth, and the top of the cloth has a larger concavity; if the spring constant is high, the cloth behaves much harder, bounces less, the top of the cloth has a smaller concavity, and the cloth is much flatter.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_high_ks.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high spring constant.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_low_ks.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low spring constant.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>The density affects the overall weight of the cloth, and by definition the weight per unit volume. If the density is higher, the cloth acts heavier, the top of the cloth has a larger deformation, and is stretched out more due to the extra weight; if the density is smaller, the cloth acts lighter, the top of the cloth has a smaller deformation, and is stretched out less since the weight is very small.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_high_density.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high density.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_low_density.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low density.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>The damping constant characterizes the external drags caused by the environment. It in turn affects the falling speed of the cloth, as well as how much the cloth bounces before coming to a stable state. If this constant is larger, the cloth falls much slower, and it exhibits fewer oscillations once becoming vertical; if this constant is smaller, then the cloth falls much quicker, and it bounces more before coming to a complete stable state (or never if the constant is zero, as the forces will act on each point mass forever). We present images taken at similar time stamps as the simulation started:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_very_high_damping.png" width="890px" />
+                    <figcaption align="middle">The wireframe with very high damping factor.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_high_damping.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high damping factor.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_zero_damping.png" width="890px" />
+                    <figcaption align="middle">The wireframe with zero damping factor. The cloth swings to the other side.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/2_pinned4.png" width="890px" />
+                    <figcaption align="middle">The wireframe in its final state for scene/pinned4.json.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <h2 align="middle">Part III: Handling collisions with other objects</h2>
+
+    <p>To handle collisions with other objects, we first loop through every point mass looking for collisions with every object. If the object is a sphere,
+    we check if the mass is inside or on the sphere. Specifically, we check if the following condition is meet:</p>
+
+    <p align="middle"><pre align="middle">(pm.position.x-origin.x)^2 + (pm.position.y-origin.y)^2 + (pm.position.z-origin.z)^2 <= radius^2</pre></p>
+
+    <p>If so, we calculate the tangent point, correction vector, and update the position as follows:</p>
+    <p align="middle"><pre align="middle">tangent_pt = origin + radius*(pm.position-origin).unit()</pre></p>
+    <p align="middle"><pre align="middle">correction = tangent_pt - pm.last_position</pre></p>
+    <p align="middle"><pre align="middle">pm.position = (1-friction)*correction + pm.last_position</pre></p>
+
+    <p>If the object is a plane, we check if the following condition:</p>
+
+    <p align="middle"><pre align="middle">dot(pm.position-point, normal) <= 0</pre></p>
+
+    <p>If so, we calculate the tangent point, correction vector, and update the position as follows:</p>
+
+    <p align="middle"><pre align="middle">tangent_pt = pm.position - pt1_inter*normal</pre></p>
+    <p align="middle"><pre align="middle">correction = tangent_pt + normal*SURFACE_OFFSET - pm.last_position</pre></p>
+    <p align="middle"><pre align="middle">pm.position = (1-friction)*correction + pm.last_position</pre></p>
+
+    <p>The following pictures show the result:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task3_1.png" width="890px" />
+                    <figcaption align="middle">scene/sphere.json in its final resting state on the sphere using the default ks = 5000.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task3_2.png" width="890px" />
+                    <figcaption align="middle">scene/sphere.json in its final resting state on the sphere using ks = 500.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task3_3.png" width="890px" />
+                    <figcaption align="middle">scene/sphere.json in its final resting state on the sphere using ks = 50000.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>The difference between the above images is that, with ks being large, the cloth looks really stiff. With ks being small, the cloth is soft.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task3_4.png" width="890px" />
+                    <figcaption align="middle">A screenshot of shaded cloth lying peacefully at rest on the plane.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+<h2 align="middle">Part IV: Handling self-collisions</h2>
+    <p>To handle self collisions, we first need to accelerate the process of looking for collisions. We need to take a point mass’s position and hash it to the 3D box volume and return a unique hash value. We achieve this goal by computing (w, h, t) according to the width, num_width_points, and num_height_points. Then, we simply return the floor of the pos (x, y, z) divided by (w, h, t) respectively as our hash.</p>
+
+    <p>Now, we move on to build a spatial map. For all point masses, we calculate their respective position hash, and check if there exists a vector of point masses with the same hash, and put the point mass into that vector.</p>
+
+    <p>Then, we can handle the self collision function. We find if there exists a point mass that is within the 3D box volume and too close to the point mass we passed in. If so, we compute a correction vector that sets the passed in point mass 2 * thickness away from the collided point mass. We then average the result and apply to the passed in point mass.</p>
+
+    <p>Finally, we enable self collision by calling build_spatial_map() in simulate() and self_collide() on each point mass. Now, we can demonstrate the process of a cloth falling down on itself:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_initial.png" width="890px" />
+                    <figcaption align="middle">The wireframe before falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_collide.png" width="890px" />
+                    <figcaption align="middle">The wireframe at first collisions when falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_rest.png" width="890px" />
+                    <figcaption align="middle">The wireframe at its final state after falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>If the density is higher, the cloth falls into a more compact shape with a lot of folds, and while falling, there are also more wrinkles on the cloth. The cloth bounces off less from itself as collisions happen. If the density is lower, the cloth falls into a more spread-out shape, where there could be few folds only, and while falling, there are also less wrinkles on the cloth. The cloth bounces off itself more easily as collisions happen.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_density_initial.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high density at its first collisions when falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_density_mid.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high density in the middle of falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_density_final.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high density at its final state after falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_density_initial.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low density at its first collisions when falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_density_mid.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low density in the middle of falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_density_final.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low density at its final state after falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>If the spring constant is higher, the cloth falls into a more stretched-out shape, as there will be more forces exerted during compression, and the cloth is maintaining a flatter shape for the part that is yet to collide with itself. If the spring constant ls lower, the cloth now supports itself less, and falls into a more compact shape due to not enough force exerted during compression to spread itself out, and the cloth is full of wrinkle when falling down.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_ks_initial.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high spring constant at its first collisions when falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_ks_mid.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high spring constant in the middle of falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_high_ks_final.png" width="890px" />
+                    <figcaption align="middle">The wireframe with high spring constant at its final state after falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_ks_initial.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low spring constant at its first collisions when falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_ks_mid.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low spring constant in the middle of falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/4_low_ks_final.png" width="890px" />
+                    <figcaption align="middle">The wireframe with low spring constant at its final state after falling down.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+<h2 align="middle">Part V: Environment-mapped Reflections</h2>
+    <p>Shader program runs on GPU. It effectively gives triangle meshes shape and color. Vertex shaders alter the (final) position, normal of vertex, while fragment shaders take in the properties of a vertex from vertex shaders anf output the color.</p>
+    <p>In Blinn-Phong shading, we break lighting down to three different parts: ambient lighting, diffuse reflection, and specular highlights. This enables us to present different lighting effects using different calculation methods/models and combine them together. We simply compute the elements within each method with the given parameters and plug them into the formula to yield the final result. We choose p = 100, k_a = 0.1, k_s = 0.6, k_d = 1.0 as the coefficients.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_bp_specular.png" width="890px" />
+                    <figcaption align="middle">The Blinn-Phong shading only with specular lighting.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_bp_diffuse.png" width="890px" />
+                    <figcaption align="middle">The Blinn-Phong shading only with diffuse reflection.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_bp_ambient.png" width="890px" />
+                    <figcaption align="middle">The Blinn-Phong shading only with ambient lighting.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_bp_combined.png" width="890px" />
+                    <figcaption align="middle">The Blinn-Phong shading overall effect.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>For texture mapping, we simply call the texture() function in GLSL to map a texture on the objects.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_texture.png" width="890px" />
+                    <figcaption align="middle">The texture mapping with custom texture.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>For bump mapping, we transform the normal vector by first computing local space normal no. Equations are shown below:</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task5_bump.png" width="890px" />
+                    <figcaption align="middle">no equation.</figcaption>
+            </tr>
+        </table>
+    </div>
+<p>The final normal is nd which equation is show above. TBN matrix is [t b n] where b = n x t. After computing the new normal nd, we copy the phong shading code then replace the old normal with new normal.</p>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task5_cloth.png" width="890px" />
+                    <figcaption align="middle">A screenshot of bump mapping on the cloth.</figcaption>
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task5_sphere.png" width="890px" />
+                    <figcaption align="middle">A screenshot of bump mapping on the sphere.</figcaption>
+            </tr>
+        </table>
+    </div>
+    <p>For displacement shading, compare to bump shading, we only change the vertex shaders. In particular, we add in_normal * h(in_uv) * u_height_scaling to position, normal, and tangent.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task5_dis.png" width="890px" />
+                    <figcaption align="middle">A screenshot of displacement mapping on the sphere.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>The difference in the resulting shading is that displacement shading has uneven surface but bump shading has smooth surface.</p>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/bump_16.png" width="890px" />
+                    <figcaption align="middle">Bump shading with -o 16 -a 16.</figcaption>
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/dis_16.png" width="890px" />
+                    <figcaption align="middle">Displacement shading with -o 16 -a 16.</figcaption>
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/bump_128.png" width="890px" />
+                    <figcaption align="middle">Bump shading with -o 128 -a 128.</figcaption>
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/dis_128.png" width="890px" />
+                    <figcaption align="middle">Displacement shading with -o 128 -a 128.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <p>With different sphere mesh's coarseness as shown above, the two shading behaves differently. With -o 16 -a 16, the bump shading sphere is not smooth and displacement shading has large bumps.
+        With -o 128 -a 128, the bump shading sphere is smooth and displacement shading has small bumps.</p>
+
+    <p>For mirror reflection, we calculate the vector from the reflection point to the camera and use that combined with the surface normal to compute trace back the ray. We simply call texture() on the trace back ray in the reverse direction to find the output color.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_mirror_1.png" width="890px" />
+                    <figcaption align="middle">The mirror shading before simulation.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/5_mirror_2.png" width="890px" />
+                    <figcaption align="middle">The mirror shading after simulation.</figcaption>
+            </tr>
+        </table>
+    </div>
+
+    <h2 align="middle">Part VI: Extra Credit</h2>
+
+    <p>For custom shading, we implement displacement diffuse texture giving a silk texture. Specifically, we copy the displacement implementation for vertex shader.
+    For fragment shader, we take the texture and add a diffuse term. The diffuse term is taken directly from phong shading.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/cus1.png" width="890px" />
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/cus2.png" width="890px" />
+            </tr>
+        </table>
+    </div>
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/cus3.png" width="890px" />
+                    <figcaption align="middle">Custom shading.</figcaption>
+            </tr>
+        </table>
+    </div>
+</body>
 </html>
